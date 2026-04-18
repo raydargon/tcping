@@ -10,106 +10,16 @@ use std::sync::mpsc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
-mod config;
-mod printer;
-mod statistics;
-mod tcp_probe;
-mod json_printer;
-mod csv_printer;
-mod database;
-mod signal_handler;
-
-use config::Config;
-use printer::{Printer, ConsolePrinter};
-use statistics::Statistics;
-use tcp_probe::{TcpProbe, ProbeResult};
-use json_printer::JsonPrinter;
-use csv_printer::CsvPrinter;
-use database::DatabasePrinter;
-use signal_handler::SignalHandler;
-
-#[derive(Parser)]
-#[command(name = "tcping")]
-#[command(about = "TCP connectivity testing tool")]
-#[command(version = "0.1.0")]
-#[command(author = "")]
-#[command(next_line_help = true)]
-struct Cli {
-    /// Target hostname or IP address (or host:port format)
-    target: String,
-
-    /// Use IPv4 only
-    #[arg(short = '4')]
-    ipv4: bool,
-
-    /// Use IPv6 only
-    #[arg(short = '6')]
-    ipv6: bool,
-
-    /// Number of retries after failed probe
-    #[arg(short = 'r', default_value_t = 0)]
-    retries: u32,
-
-    /// Number of probes to send
-    #[arg(short = 'c', default_value_t = 0)]
-    count: u32,
-
-    /// Output in JSON format
-    #[arg(short = 'j')]
-    json: bool,
-
-    /// Pretty print JSON output
-    #[arg(long = "pretty")]
-    pretty: bool,
-
-    /// Disable color output
-    #[arg(long = "no-color")]
-    no_color: bool,
-
-    /// Debug mode
-    #[arg(short = 'd')]
-    debug: bool,
-
-    /// Output in CSV format
-    #[arg(long = "csv")]
-    csv: bool,
-
-    /// Verbose output
-    #[arg(short = 'v')]
-    verbose: bool,
-
-    /// Check for updates
-    #[arg(short = 'u')]
-    update: bool,
-
-    /// Interface to bind to
-    #[arg(short = 'I')]
-    interface: Option<String>,
-
-    /// Interval between probes in seconds
-    #[arg(short = 'i', default_value_t = 1.0)]
-    interval: f64,
-
-    /// Timeout in seconds
-    #[arg(short = 't', default_value_t = 1.0)]
-    timeout: f64,
-
-    /// SQLite database file
-    #[arg(long = "db")]
-    database: Option<String>,
-
-    /// Show source address
-    #[arg(long = "show-source-address")]
-    show_source_address: bool,
-
-    /// Show failures only
-    #[arg(long = "show-failures-only")]
-    show_failures_only: bool,
-
-    /// Show date/time for each probe
-    #[arg(short = 'D')]
-    show_datetime: bool,
-}
+// Use the library modules and Cli struct
+use tcping::config::Config;
+use tcping::printer::{Printer, ConsolePrinter};
+use tcping::statistics::Statistics;
+use tcping::tcp_probe::{TcpProbe, ProbeResult};
+use tcping::json_printer::JsonPrinter;
+use tcping::csv_printer::CsvPrinter;
+use tcping::database::DatabasePrinter;
+use tcping::signal_handler::SignalHandler;
+use tcping::Cli;
 
 fn main() {
     let cli = Cli::parse();

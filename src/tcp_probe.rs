@@ -29,30 +29,23 @@ impl TcpProbe {
             TcpStream::connect_timeout(&socket_addr, self.config.timeout)?
         };
 
-        // Attempt TCP connection with timeout
-        match stream {
-            Ok(stream) => {
-                let rtt = start_time.elapsed().as_secs_f32() * 1000.0; // Convert to milliseconds
+        // Since TcpStream::connect_timeout returns a Result, we need to handle it properly
+        let rtt = start_time.elapsed().as_secs_f32() * 1000.0; // Convert to milliseconds
 
-                // Get local address if requested
-                let source_addr = if self.config.show_source_address {
-                    Some(stream.local_addr().ok())
-                } else {
-                    None
-                };
+        // Get local address if requested
+        let source_addr = if self.config.show_source_address {
+            stream.local_addr().ok()
+        } else {
+            None
+        };
 
-                Ok(ProbeResult {
-                    success: true,
-                    rtt,
-                    source_addr: source_addr.flatten(),
-                    target_addr: socket_addr,
-                    error: None,
-                })
-            },
-            Err(e) => {
-                Err(ProbeError::ConnectionFailed(format!("Failed to connect to {}: {}", socket_addr, e)))
-            }
-        }
+        Ok(ProbeResult {
+            success: true,
+            rtt,
+            source_addr,
+            target_addr: socket_addr,
+            error: None,
+        })
     }
 
     fn resolve_target(&self) -> Result<SocketAddr, ProbeError> {

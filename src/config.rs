@@ -1,6 +1,5 @@
 // Configuration module for TCPing
 
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 use std::time::Duration;
 
 #[derive(Debug, Clone)]
@@ -33,7 +32,7 @@ impl Config {
         let (host, port) = Self::parse_target(&cli.target)?;
 
         // Validate host and port format
-        Self::validate_host_port(&host, port)?
+        Self::validate_host_port(&host, port)?;
 
         // Validate IPv4/IPv6 exclusivity
         if cli.ipv4 && cli.ipv6 {

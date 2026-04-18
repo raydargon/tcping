@@ -161,7 +161,7 @@ impl Printer for ConsolePrinter {
         } else {
             // Simple formatting for demonstration
             // In a real implementation, this would use proper formatting
-            format!("{} {:?}", format, args)
+            format!("{}", format)
         };
 
         if self.use_color {
@@ -176,7 +176,7 @@ impl Printer for ConsolePrinter {
             format.to_string()
         } else {
             // Simple formatting for demonstration
-            format!("{} {:?}", format, args)
+            format!("{}", format)
         };
 
         eprintln!("Error: {}", message);
