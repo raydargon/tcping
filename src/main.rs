@@ -115,7 +115,7 @@ fn main() {
     let cli = Cli::parse();
 
     // Handle version flag using clap's built-in functionality
-    if cli.verbose && (cli.target == "--version" || cli.target == "-v") {
+    if cli.verbose && cli.target == "--version" {
         println!("tcping version 0.1.0");
         return;
     }
