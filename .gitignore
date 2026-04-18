@@ -10,3 +10,4 @@ patches/
 .tool-versions
 /target/
 /output/
+.humanize*

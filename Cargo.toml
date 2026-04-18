@@ -1,0 +1,26 @@
+[package]
+name = "tcping"
+version = "0.1.0"
+edition = "2021"
+description = "A TCP connectivity testing tool refactored from Go to Rust"
+license = "MIT"
+
+# Repository information
+repository = "https://github.com/pouriyajamshidi/tcping"
+
+[dependencies]
+clap = { version = "4.0", features = ["derive", "env"] }
+tokio = { version = "1.0", features = ["full"] }
+rusqlite = "0.30.0"
+
+# Additional dependencies for functionality
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+csv = "1.3"
+colored = "2.1"
+chrono = { version = "0.4", features = ["serde"] }
+thiserror = "1.0"
+
+[dev-dependencies]
+assert_cmd = "2.0"
+predicates = "3.0"
