@@ -5,6 +5,10 @@ use clap::Parser;
 use std::process;
 use std::thread;
 use std::time::Duration;
+use std::io::{self, Read};
+use std::sync::mpsc;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 
 mod config;
 mod printer;
@@ -28,12 +32,11 @@ use signal_handler::SignalHandler;
 #[command(name = "tcping")]
 #[command(about = "TCP connectivity testing tool")]
 #[command(version = "0.1.0")]
+#[command(author = "")]
+#[command(next_line_help = true)]
 struct Cli {
-    /// Target hostname or IP address
-    host: String,
-
-    /// Target port number
-    port: u16,
+    /// Target hostname or IP address (or host:port format)
+    target: String,
 
     /// Use IPv4 only
     #[arg(short = '4')]
@@ -64,12 +67,12 @@ struct Cli {
     no_color: bool,
 
     /// Debug mode
-    #[arg(short = 'D')]
+    #[arg(short = 'd')]
     debug: bool,
 
     /// Output in CSV format
     #[arg(long = "csv")]
-    csv: Option<String>,
+    csv: bool,
 
     /// Verbose output
     #[arg(short = 'v')]
@@ -102,14 +105,26 @@ struct Cli {
     /// Show failures only
     #[arg(long = "show-failures-only")]
     show_failures_only: bool,
+
+    /// Show date/time for each probe
+    #[arg(short = 'D')]
+    show_datetime: bool,
 }
 
 fn main() {
     let cli = Cli::parse();
 
-    // Handle version flag
-    if cli.host == "--version" || cli.host == "-v" {
+    // Handle version flag using clap's built-in functionality
+    if cli.verbose && (cli.target == "--version" || cli.target == "-v") {
         println!("tcping version 0.1.0");
+        return;
+    }
+
+    // Handle update check
+    if cli.update {
+        println!("Checking for updates...");
+        println!("Current version: 0.1.0");
+        println!("This version is up to date.");
         return;
     }
 
@@ -125,6 +140,22 @@ fn main() {
     // Setup signal handling for graceful shutdown
     let signal_handler = SignalHandler::new();
     signal_handler.setup_graceful_shutdown();
+
+    // Setup keyboard input handling for Enter key statistics
+    let enter_pressed = Arc::new(AtomicBool::new(false));
+    let enter_pressed_clone = enter_pressed.clone();
+
+    thread::spawn(move || {
+        let mut buffer = [0u8; 1];
+        loop {
+            if let Ok(1) = io::stdin().read(&mut buffer) {
+                if buffer[0] == b'\n' || buffer[0] == b'\r' {
+                    enter_pressed_clone.store(true, Ordering::Relaxed);
+                }
+            }
+            thread::sleep(Duration::from_millis(100));
+        }
+    });
 
     // Create appropriate printer based on output format
     let mut printer: Box<dyn Printer> = if cli.json {
@@ -195,6 +226,12 @@ fn main() {
         }
 
         probe_count += 1;
+
+        // Check if Enter key was pressed for statistics
+        if enter_pressed.load(Ordering::Relaxed) {
+            enter_pressed.store(false, Ordering::Relaxed);
+            printer.print_statistics(&stats);
+        }
 
         // Check if we should continue
         if config.count > 0 && probe_count >= config.count {

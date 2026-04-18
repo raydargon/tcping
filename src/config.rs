@@ -24,12 +24,16 @@ pub struct Config {
     pub database: Option<String>,
     pub show_source_address: bool,
     pub show_failures_only: bool,
+    pub show_datetime: bool,
 }
 
 impl Config {
     pub fn from_cli(cli: &crate::Cli) -> Result<Self, String> {
+        // Parse target (host:port format or separate host/port)
+        let (host, port) = Self::parse_target(&cli.target)?;
+
         // Validate host and port format
-        Self::validate_host_port(&cli.host, cli.port)?;
+        Self::validate_host_port(&host, port)?
 
         // Validate IPv4/IPv6 exclusivity
         if cli.ipv4 && cli.ipv6 {
@@ -37,8 +41,8 @@ impl Config {
         }
 
         Ok(Config {
-            host: cli.host.clone(),
-            port: cli.port,
+            host: host,
+            port: port,
             ipv4: cli.ipv4,
             ipv6: cli.ipv6,
             retries: cli.retries,
@@ -56,7 +60,30 @@ impl Config {
             database: cli.database.clone(),
             show_source_address: cli.show_source_address,
             show_failures_only: cli.show_failures_only,
+            show_datetime: cli.show_datetime,
         })
+    }
+
+    fn parse_target(target: &str) -> Result<(String, u16), String> {
+        // Check if target contains colon (host:port format)
+        if let Some(colon_pos) = target.rfind(':') {
+            let host_part = &target[..colon_pos];
+            let port_part = &target[colon_pos + 1..];
+
+            if host_part.is_empty() {
+                return Err("Host cannot be empty".to_string());
+            }
+
+            match port_part.parse::<u16>() {
+                Ok(port) if port > 0 => Ok((host_part.to_string(), port)),
+                Ok(0) => Err("Port cannot be zero".to_string()),
+                Ok(_) => Err("Port number must be between 1 and 65535".to_string()),
+                Err(_) => Err(format!("Invalid port number: {}", port_part)),
+            }
+        } else {
+            // No colon found, treat as host only (port must be provided separately)
+            Err("Target must be in host:port format".to_string())
+        }
     }
 
     fn validate_host_port(host: &str, port: u16) -> Result<(), String> {

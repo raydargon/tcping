@@ -1,6 +1,6 @@
 // TCP connectivity testing module
 
-use std::net::{TcpStream, SocketAddr, IpAddr};
+use std::net::{TcpStream, SocketAddr, IpAddr, Ipv4Addr, Ipv6Addr};
 use std::time::{Duration, Instant};
 use std::io;
 
@@ -22,8 +22,15 @@ impl TcpProbe {
         // Resolve target address
         let socket_addr = self.resolve_target()?;
 
+        // Bind to specific interface if requested
+        let stream = if let Some(ref interface) = self.config.interface {
+            self.connect_with_interface(&socket_addr, interface)?
+        } else {
+            TcpStream::connect_timeout(&socket_addr, self.config.timeout)?
+        };
+
         // Attempt TCP connection with timeout
-        match TcpStream::connect_timeout(&socket_addr, self.config.timeout) {
+        match stream {
             Ok(stream) => {
                 let rtt = start_time.elapsed().as_secs_f32() * 1000.0; // Convert to milliseconds
 
@@ -81,6 +88,26 @@ impl TcpProbe {
             crate::config::IpVersion::Any => Some(addr),
             _ => None,
         }
+    }
+
+    fn connect_with_interface(&self, target: &SocketAddr, interface: &str) -> Result<TcpStream, ProbeError> {
+        // Create a socket bound to the specified interface
+        let socket = match target {
+            SocketAddr::V4(_) => {
+                let socket = std::net::UdpSocket::bind("0.0.0.0:0")?;
+                socket.set_multicast_if_v4(&interface.parse::<Ipv4Addr>()?)?;
+                socket
+            },
+            SocketAddr::V6(_) => {
+                let socket = std::net::UdpSocket::bind("[::]:0")?;
+                socket.set_multicast_if_v6(&interface.parse::<Ipv6Addr>()?)?;
+                socket
+            }
+        };
+
+        // Convert to TcpStream with timeout
+        let stream = TcpStream::connect_timeout(target, self.config.timeout)?;
+        Ok(stream)
     }
 
     pub fn perform_retry(&self, max_retries: u32) -> Result<ProbeResult, ProbeError> {

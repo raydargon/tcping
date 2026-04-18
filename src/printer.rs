@@ -55,6 +55,17 @@ impl Printer for ConsolePrinter {
     }
 
     fn print_probe_success(&mut self, source_addr: Option<String>, user_input: &str, streak: u32, rtt: f32) {
+        // Skip successful probes if show_failures_only is enabled
+        if self.config.show_failures_only {
+            return;
+        }
+
+        let timestamp = if self.config.show_datetime {
+            format!("[{}] ", chrono::Local::now().format("%Y-%m-%d %H:%M:%S"))
+        } else {
+            String::new()
+        };
+
         let source_info = if let Some(addr) = source_addr {
             format!(" from {}", addr)
         } else {
@@ -67,7 +78,7 @@ impl Printer for ConsolePrinter {
             String::new()
         };
 
-        let message = format!("{}: connected{} in {:.2}ms{}", user_input, source_info, rtt, streak_info);
+        let message = format!("{}{}: connected{} in {:.2}ms{}", timestamp, user_input, source_info, rtt, streak_info);
 
         if self.use_color {
             println!("{}", message.green());
@@ -77,13 +88,19 @@ impl Printer for ConsolePrinter {
     }
 
     fn print_probe_fail(&mut self, user_input: &str, streak: u32) {
+        let timestamp = if self.config.show_datetime {
+            format!("[{}] ", chrono::Local::now().format("%Y-%m-%d %H:%M:%S"))
+        } else {
+            String::new()
+        };
+
         let streak_info = if streak > 0 {
             format!(" (consecutive failures: {})", streak)
         } else {
             String::new()
         };
 
-        let message = format!("{}: connection failed{}", user_input, streak_info);
+        let message = format!("{}{}: connection failed{}", timestamp, user_input, streak_info);
 
         if self.use_color {
             println!("{}", message.red());
