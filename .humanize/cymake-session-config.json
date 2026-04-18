@@ -1,0 +1,8 @@
+{
+  "codex_model": "minimax-m2.5",
+  "codex_effort": "high",
+  "bitlesson_model": "minimax-m2.5",
+  "agent_teams": true,
+  "alternative_plan_language": "",
+  "gen_plan_mode": "discussion"
+}
